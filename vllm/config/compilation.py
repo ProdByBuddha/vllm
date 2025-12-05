@@ -106,13 +106,13 @@ class PassConfig:
     """
 
     # New flags
-    fuse_norm_quant: bool = Field(default=None)
+    fuse_norm_quant: bool = Field(default=True)
     """Fuse the custom RMSNorm + quant ops."""
-    fuse_act_quant: bool = Field(default=None)
+    fuse_act_quant: bool = Field(default=True)
     """Fuse the custom SiluMul + quant ops."""
-    fuse_attn_quant: bool = Field(default=None)
+    fuse_attn_quant: bool = Field(default=True)
     """Fuse the custom attention + quant ops."""
-    eliminate_noops: bool = Field(default=None)
+    eliminate_noops: bool = Field(default=True)
     """Eliminate no-op ops."""
     enable_sp: bool = Field(default=None)
     """Enable sequence parallelism."""
@@ -504,7 +504,7 @@ class CompilationConfig:
     constructor, e.g. `CompilationConfig(inductor_passes={"a": func})`."""
 
     # CudaGraph compilation
-    cudagraph_mode: CUDAGraphMode = Field(default=None)
+    cudagraph_mode: CUDAGraphMode = Field(default=CUDAGraphMode.FULL)
     """
     The mode of the cudagraph:
 
@@ -848,6 +848,17 @@ class CompilationConfig:
                 "use_inductor_graph_partition=False instead."
             )
 
+        def add_default_custom_op(op_name: str):
+            if (
+                f"+{op_name}" not in self.custom_ops
+                and f"-{op_name}" not in self.custom_ops
+            ):
+                self.custom_ops.append(f"+{op_name}")
+
+        add_default_custom_op("rms_norm")
+        add_default_custom_op("silu_and_mul")
+        add_default_custom_op("quant_fp8")
+
         for op in self.custom_ops:
             if op[0] not in {"+", "-"} and op not in {"all", "none"}:
                 raise ValueError(
@@ -1024,6 +1035,15 @@ class CompilationConfig:
         return self.splitting_ops is not None and all(
             op in self.splitting_ops for op in self._attention_ops
         )
+
+    def add_missing_attention_splitting_ops(self):
+        if self.splitting_ops is None:
+            self.splitting_ops = list(self._attention_ops)
+            return
+
+        for op in self._attention_ops:
+            if op not in self.splitting_ops:
+                self.splitting_ops.append(op)
 
     def is_attention_compiled_piecewise(self) -> bool:
         if not self.splitting_ops_contain_attention():

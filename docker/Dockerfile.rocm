@@ -144,4 +144,8 @@ ENV SAFETENSORS_FAST_GPU=1
 # Performance environment variable.
 ENV HIP_FORCE_DEV_KERNARG=1
 
+# Workaround for ROCm profiler limits
+RUN echo "ROCTRACER_MAX_EVENTS=10000000" > /app/libkineto.conf
+ENV KINETO_CONFIG="/app/libkineto.conf"
+
 CMD ["/bin/bash"]
