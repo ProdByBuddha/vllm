@@ -1031,19 +1031,10 @@ def add_cli_args(parser: argparse.ArgumentParser):
         type=str,
         help="Name or path of the tokenizer, if not using the default tokenizer.",  # noqa: E501
     )
-    tokenizer_choices = [
-        "auto",
-        "hf",
-        "slow",
-        "mistral",
-        "deepseek_v32",
-        **TokenizerRegistry.REGISTRY.keys(),
-    ]
     parser.add_argument(
         "--tokenizer-mode",
         type=str,
         default="auto",
-        choices=["auto", "hf", "slow", "mistral", "deepseek_v32"],
         help="""Tokenizer mode:\n
         - "auto" will use the tokenizer from `mistral_common` for Mistral models
         if available, otherwise it will use the "hf" tokenizer.\n
